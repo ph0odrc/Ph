@@ -9,17 +9,12 @@
     <style>
         body { background: #f1f5f9; font-family: 'Segoe UI', sans-serif; }
         
-        /* Bloc Solde avec ton image HP */
         .balance-card { 
-            background: url('IMG_3850.jpeg') no-repeat center center;
+            background: linear-gradient(rgba(0, 31, 63, 0.7), rgba(0, 31, 63, 0.7)), url('IMG_3850.jpeg') no-repeat center center;
             background-size: cover;
             border-radius: 1.5rem;
             position: relative;
             overflow: hidden;
-        }
-        .balance-card::before {
-            content: ""; position: absolute; inset: 0;
-            background: rgba(0, 31, 63, 0.6); /* Voile bleu pour lisibilité */
         }
 
         .action-icon { @apply flex flex-col items-center justify-center p-3; }
@@ -28,6 +23,7 @@
             background: #ffffff; color: #007DBA; border: 1px solid #e2e8f0;
         }
         .list-item { @apply flex items-center justify-between p-5 bg-white border-b border-gray-50 active:bg-gray-50; }
+        .input-lock { @apply w-full p-4 bg-slate-50 rounded-xl border border-slate-200 outline-none focus:border-blue-400 font-bold text-slate-700 text-xs mb-3 disabled:opacity-60 disabled:bg-gray-200; }
     </style>
 </head>
 <body class="pb-24">
@@ -38,9 +34,9 @@
         </div>
         <div>
             <div class="bg-slate-800 text-white text-[9px] px-3 py-1 rounded-full font-black flex items-center gap-1 w-fit">
-                <i class="fa-solid fa-gem text-amber-400"></i> HP VIP 0
+                <i class="fa-solid fa-gem text-amber-400"></i> HP VIP <span id="vipLevel">0</span>
             </div>
-            <p id="userPhone" class="font-black text-slate-800 mt-1">Sychronisation...</p>
+            <p id="userPhone" class="font-black text-slate-800 mt-1">Synchronisation...</p>
         </div>
     </div>
 
@@ -48,7 +44,7 @@
         <div class="balance-card p-6 text-white relative shadow-xl">
             <div class="relative z-10">
                 <p class="text-[10px] uppercase font-bold opacity-80 tracking-widest">Solde disponible</p>
-                <h2 class="text-3xl font-black mt-1"><span id="solde">0.00</span> <span class="text-sm font-light uppercase">CDF</span></h2>
+                <h2 class="text-3xl font-black mt-1"><span id="solde">0</span> <span class="text-sm font-light uppercase">CDF</span></h2>
                 
                 <div class="grid grid-cols-2 mt-8 border-t border-white/20 pt-4">
                     <div>
@@ -73,7 +69,7 @@
             <div class="icon-circle"><i class="fa-solid fa-wallet text-xl"></i></div>
             <span class="text-[10px] font-bold text-slate-500 uppercase">Retirer</span>
         </a>
-        <a href="compte_bancaire.html" class="action-icon">
+        <a href="#bankSection" class="action-icon">
             <div class="icon-circle"><i class="fa-solid fa-credit-card text-xl"></i></div>
             <span class="text-[10px] font-bold text-slate-500 uppercase">Compte</span>
         </a>
@@ -83,17 +79,32 @@
         </a>
     </div>
 
-    <div class="px-4 mb-8">
-        <div class="bg-amber-50 border border-amber-100 p-3 rounded-xl flex items-center justify-between shadow-sm">
-            <div class="flex items-center gap-3">
-                <span class="text-2xl">🧧</span>
-                <p class="text-[10px] font-bold text-amber-800 leading-tight">Recevez une récompense<br>sous forme d'enveloppe rouge.</p>
+    <div id="bankSection" class="px-4 mb-8">
+        <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
+            <h3 class="text-[11px] font-black uppercase text-blue-600 mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-shield-halved"></i> Liaison Compte de Retrait
+            </h3>
+            
+            <div id="lockMessage" class="hidden bg-blue-50 p-3 rounded-xl mb-4 text-[#007DBA] text-[9px] font-bold uppercase text-center border border-blue-100">
+                <i class="fa-solid fa-lock"></i> Informations liées définitivement
             </div>
-            <button class="bg-red-600 text-white text-[10px] font-black px-4 py-2 rounded-lg uppercase">Échange</button>
+
+            <input type="text" id="bankNameUser" placeholder="Nom complet (Sur la SIM)" class="input-lock">
+            <input type="tel" id="bankNumberUser" placeholder="Numéro de téléphone (Retrait)" class="input-lock">
+            <select id="bankNetworkUser" class="input-lock">
+                <option value="" disabled selected>Choisir le réseau</option>
+                <option value="M-Pesa">Vodacom M-Pesa</option>
+                <option value="Airtel Money">Airtel Money</option>
+                <option value="Orange Money">Orange Money</option>
+            </select>
+
+            <button id="btnSaveBank" onclick="saveBankDetails()" class="w-full bg-slate-900 text-white py-4 rounded-xl font-black uppercase text-[10px] tracking-widest shadow-lg">
+                Lier le compte à vie
+            </button>
         </div>
     </div>
 
-    <div class="bg-white mx-4 rounded-3xl overflow-hidden shadow-sm border border-slate-100">
+    <div class="bg-white mx-4 rounded-3xl overflow-hidden shadow-sm border border-slate-100 mb-8">
         <a href="about.html" class="list-item">
             <div class="flex items-center gap-4">
                 <i class="fa-solid fa-file-lines text-blue-600"></i>
@@ -108,37 +119,78 @@
             </div>
             <i class="fa-solid fa-chevron-right text-slate-300 text-xs"></i>
         </button>
-        <a href="app.apk" class="list-item">
-            <div class="flex items-center gap-4">
-                <i class="fa-solid fa-circle-info text-blue-400"></i>
-                <span class="text-[11px] font-bold text-slate-700 uppercase">Télécharger</span>
-            </div>
-            <i class="fa-solid fa-chevron-right text-slate-300 text-xs"></i>
-        </a>
     </div>
 
     <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 p-4 flex justify-around items-center z-50">
         <a href="dashboard.html" class="flex flex-col items-center text-slate-300">
-            <i class="fa-solid fa-house-laptop text-xl"></i><span class="text-[9px] font-bold mt-1 uppercase tracking-tighter">Maison</span>
+            <i class="fa-solid fa-house-laptop text-xl"></i><span class="text-[9px] font-bold mt-1 uppercase">Maison</span>
         </a>
         <a href="produit.html" class="flex flex-col items-center text-slate-300">
-            <i class="fa-solid fa-microchip text-xl"></i><span class="text-[9px] font-bold mt-1 uppercase tracking-tighter">Produit</span>
+            <i class="fa-solid fa-microchip text-xl"></i><span class="text-[9px] font-bold mt-1 uppercase">Produit</span>
         </a>
         <a href="equipe.html" class="flex flex-col items-center text-slate-300">
-            <i class="fa-solid fa-users-gear text-xl"></i><span class="text-[9px] font-bold mt-1 uppercase tracking-tighter">Équipe</span>
+            <i class="fa-solid fa-users-gear text-xl"></i><span class="text-[9px] font-bold mt-1 uppercase">Équipe</span>
         </a>
         <a href="compte.html" class="flex flex-col items-center text-[#007DBA]">
-            <i class="fa-solid fa-circle-user text-xl"></i><span class="text-[9px] font-bold mt-1 uppercase tracking-tighter">Le mien</span>
+            <i class="fa-solid fa-circle-user text-xl"></i><span class="text-[9px] font-bold mt-1 uppercase">Le mien</span>
         </a>
     </nav>
 
     <script>
+        const dbURL = "https://ph-invest-f5bdf-default-rtdb.firebaseio.com";
         const session = JSON.parse(localStorage.getItem('hp_session'));
         if(!session) window.location.href = "index.html";
 
-        document.getElementById('userPhone').innerText = session.telephone;
-        document.getElementById('solde').innerText = session.solde.toLocaleString();
-        document.getElementById('initialeUser').innerText = session.telephone.substring(4, 5);
+        async function loadUserData() {
+            try {
+                const res = await fetch(`${dbURL}/utilisateurs/${session.firebaseId}.json`);
+                const user = await res.json();
+
+                // Infos de base
+                document.getElementById('userPhone').innerText = user.telephone;
+                document.getElementById('solde').innerText = user.solde.toLocaleString();
+                document.getElementById('initialeUser').innerText = user.telephone.substring(4, 5);
+                document.getElementById('revenu').innerText = (user.revenuTotal || 0).toLocaleString();
+                document.getElementById('recharge').innerText = (user.rechargeTotale || 0).toLocaleString();
+                document.getElementById('vipLevel').innerText = user.vipLevel || 0;
+
+                // Logique Liaison Bancaire (Si déjà rempli, on bloque)
+                if(user.bankNumber) {
+                    document.getElementById('bankNameUser').value = user.bankNameUser;
+                    document.getElementById('bankNumberUser').value = user.bankNumber;
+                    document.getElementById('bankNetworkUser').value = user.bankName;
+
+                    // Verrouillage
+                    document.getElementById('bankNameUser').disabled = true;
+                    document.getElementById('bankNumberUser').disabled = true;
+                    document.getElementById('bankNetworkUser').disabled = true;
+                    document.getElementById('btnSaveBank').style.display = 'none';
+                    document.getElementById('lockMessage').style.display = 'block';
+                }
+            } catch (e) { console.error("Erreur sync"); }
+        }
+
+        async function saveBankDetails() {
+            const nom = document.getElementById('bankNameUser').value;
+            const num = document.getElementById('bankNumberUser').value;
+            const net = document.getElementById('bankNetworkUser').value;
+
+            if(!nom || !num || !net) { alert("Remplissez tous les champs !"); return; }
+            if(!confirm("⚠️ Attention : Ce compte sera lié définitivement. Confirmer ?")) return;
+
+            try {
+                await fetch(`${dbURL}/utilisateurs/${session.firebaseId}.json`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({
+                        bankNameUser: nom,
+                        bankNumber: num,
+                        bankName: net
+                    })
+                });
+                alert("✅ Compte lié avec succès !");
+                location.reload();
+            } catch (e) { alert("Erreur de connexion"); }
+        }
 
         function logout() {
             if(confirm("Confirmer la déconnexion ?")) {
@@ -146,6 +198,8 @@
                 window.location.href = "index.html";
             }
         }
+
+        loadUserData();
     </script>
 </body>
 </html>
