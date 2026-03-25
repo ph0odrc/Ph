@@ -71,15 +71,17 @@
         // --- 1. DÉTECTION AUTO ET VERROUILLAGE DU PARRAIN ---
         window.onload = function() {
             const urlParams = new URLSearchParams(window.location.search);
-            const refCode = urlParams.get('ref');
+            let refCode = urlParams.get('ref');
             const invInput = document.getElementById('inv');
             
             if (refCode) {
+                // CORRECTION ICI : Remplace les espaces par des + pour que le numéro soit complet
+                refCode = refCode.trim().replace(/ /g, "+");
+                
                 invInput.value = refCode;
-                // Verrouillage pour empêcher la modification
                 invInput.readOnly = true; 
                 invInput.style.pointerEvents = "none";
-                invInput.style.opacity = "0.6";
+                invInput.style.opacity = "0.7";
                 console.log("Système HP : Parrain lié -> " + refCode);
             }
         };
