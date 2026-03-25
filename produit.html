@@ -19,8 +19,8 @@
 <body class="pb-32">
 
     <div class="hp-blue p-8 pt-12 pb-10 text-white rounded-b-[3rem] shadow-xl">
-        <h1 class="text-2xl font-black uppercase italic tracking-tighter text-center">Équipements HP</h1>
-        <p class="text-[10px] font-bold opacity-80 uppercase tracking-[0.3em] mt-1 text-center">Choisissez votre puissance VIP</p>
+        <h1 class="text-2xl font-black uppercase italic tracking-tighter">Équipements HP</h1>
+        <p class="text-[10px] font-bold opacity-80 uppercase tracking-[0.3em] mt-1">Choisissez votre puissance VIP</p>
     </div>
 
     <div id="productContainer" class="px-5 mt-6 space-y-6">
@@ -43,6 +43,7 @@
 
     <script>
         const dbURL = "https://ph-invest-f5bdf-default-rtdb.firebaseio.com";
+
         const plans = [
             { id: 1, prix: 18000, jour: 3700, img: "IMG_3839.jpeg" },
             { id: 2, prix: 35000, jour: 7500, img: "IMG_3840.jpeg" },
@@ -61,7 +62,7 @@
         const container = document.getElementById('productContainer');
 
         plans.forEach(plan => {
-            const revenuTotal = plan.jour * 18;
+            const revenuTotal = plan.jour * 18; 
             container.innerHTML += `
                 <div class="card-vip p-5 shadow-sm">
                     <div class="flex items-center gap-4 mb-4">
@@ -71,6 +72,7 @@
                             <p class="text-[10px] text-blue-600 font-bold uppercase tracking-tighter italic">+ ${plan.jour.toLocaleString()} CDF / Jour</p>
                         </div>
                     </div>
+
                     <div class="grid grid-cols-2 gap-3 mb-5">
                         <div class="bg-slate-50 p-3 rounded-2xl text-center">
                             <p class="text-[8px] font-bold text-slate-400 uppercase">Durée</p>
@@ -81,6 +83,7 @@
                             <p class="text-[11px] font-black text-blue-700">${revenuTotal.toLocaleString()} CDF</p>
                         </div>
                     </div>
+
                     <div class="flex justify-between items-center px-1">
                         <div>
                             <p class="text-[9px] font-bold text-slate-400 uppercase">Investissement</p>
@@ -95,95 +98,82 @@
         });
 
         async function commander(prix, id, revenuJour) {
-            let session = JSON.parse(localStorage.getItem('hp_session'));
-            if(!session) return window.location.href="index.html";
+            const session = JSON.parse(localStorage.getItem('hp_session'));
+            if(!session || !session.uid) return window.location.href="index.html";
 
-            // Récupérer les infos fraîches de l'utilisateur
-            const userRes = await fetch(`${dbURL}/utilisateurs/${session.firebaseId}.json`);
-            const userData = await userRes.json();
+            if(!confirm("Confirmer l'activation du HP VIP " + id + " pour " + prix.toLocaleString() + " CDF ?")) return;
 
-            if(userData.solde < prix) {
-                alert("❌ Solde insuffisant ! Veuillez recharger pour acheter ce produit.");
-                return;
-            }
+            try {
+                // 1. Récupérer les données actuelles de tous les utilisateurs
+                const responseUsers = await fetch(`${dbURL}/utilisateurs.json`);
+                const allUsers = await responseUsers.json();
+                const buyer = allUsers[session.uid];
 
-            if(confirm(`Confirmer l'activation du HP VIP ${id} ?`)) {
-                try {
-                    const now = new Date().toISOString();
-                    
-                    // 1. Mise à jour de l'utilisateur (Achat + Activation Retrait + Machine Dashboard)
-                    await fetch(`${dbURL}/utilisateurs/${session.firebaseId}.json`, {
-                        method: 'PATCH',
-                        body: JSON.stringify({
-                            solde: userData.solde - prix,
-                            produitActif: true,
-                            nomProduit: "HP VIP " + id,
-                            revenuJournalier: revenuJour,
-                            dateAchatProduit: now,
-                            derniereMajGains: now,
-                            droitRetrait: true,
-                            vipLevel: id
-                        })
-                    });
+                if (!buyer || buyer.solde < prix) {
+                    alert("❌ Solde insuffisant ! Veuillez recharger votre compte.");
+                    return;
+                }
 
-                    // 2. DISTRIBUTION DES COMMISSIONS (3 NIVEAUX)
-                    const usersRes = await fetch(`${dbURL}/utilisateurs.json`);
-                    const allUsers = await usersRes.json();
+                const updates = {};
+                
+                // 2. Débiter l'acheteur et activer le statut
+                updates[`/utilisateurs/${session.uid}/solde`] = (buyer.solde || 0) - prix;
+                updates[`/utilisateurs/${session.uid}/has_recharged`] = true;
+                updates[`/utilisateurs/${session.uid}/produitActif`] = id;
+                updates[`/utilisateurs/${session.uid}/revenuJournalier`] = revenuJour;
 
-                    // Niveau 1 (28%)
-                    if (userData.parrain) {
-                        const p1 = Object.values(allUsers).find(u => u.telephone === userData.parrain);
-                        if (p1) {
-                            const comm1 = prix * 0.28;
-                            await giveComm(p1, comm1, "Commission L1");
+                // 3. --- SYSTÈME DE COMMISSIONS AUTOMATIQUES ---
+                
+                // NIVEAU 1 (28%)
+                if (buyer.parrain) {
+                    const cleanP1 = buyer.parrain.replace("+243", "").trim();
+                    const p1Id = Object.keys(allUsers).find(k => allUsers[k].telephone && allUsers[k].telephone.includes(cleanP1));
+
+                    if (p1Id) {
+                        const comm1 = Math.floor(prix * 0.28);
+                        updates[`/utilisateurs/${p1Id}/solde`] = (allUsers[p1Id].solde || 0) + comm1;
+                        updates[`/utilisateurs/${p1Id}/commissionTeam`] = (allUsers[p1Id].commissionTeam || 0) + comm1;
+
+                        // NIVEAU 2 (2%)
+                        const p1Data = allUsers[p1Id];
+                        if (p1Data.parrain) {
+                            const cleanP2 = p1Data.parrain.replace("+243", "").trim();
+                            const p2Id = Object.keys(allUsers).find(k => allUsers[k].telephone && allUsers[k].telephone.includes(cleanP2));
                             
-                            // Niveau 2 (2%)
-                            if (p1.parrain) {
-                                const p2 = Object.values(allUsers).find(u => u.telephone === p1.parrain);
-                                if (p2) {
-                                    const comm2 = prix * 0.02;
-                                    await giveComm(p2, comm2, "Commission L2");
+                            if (p2Id) {
+                                const comm2 = Math.floor(prix * 0.02);
+                                updates[`/utilisateurs/${p2Id}/solde`] = (allUsers[p2Id].solde || 0) + comm2;
+                                updates[`/utilisateurs/${p2Id}/commissionTeam`] = (allUsers[p2Id].commissionTeam || 0) + comm2;
 
-                                    // Niveau 3 (1%)
-                                    if (p2.parrain) {
-                                        const p3 = Object.values(allUsers).find(u => u.telephone === p2.parrain);
-                                        if (p3) {
-                                            const comm3 = prix * 0.01;
-                                            await giveComm(p3, comm3, "Commission L3");
-                                        }
+                                // NIVEAU 3 (1%)
+                                const p2Data = allUsers[p2Id];
+                                if (p2Data.parrain) {
+                                    const cleanP3 = p2Data.parrain.replace("+243", "").trim();
+                                    const p3Id = Object.keys(allUsers).find(k => allUsers[k].telephone && allUsers[k].telephone.includes(cleanP3));
+                                    
+                                    if (p3Id) {
+                                        const comm3 = Math.floor(prix * 0.01);
+                                        updates[`/utilisateurs/${p3Id}/solde`] = (allUsers[p3Id].solde || 0) + comm3;
+                                        updates[`/utilisateurs/${p3Id}/commissionTeam`] = (allUsers[p3Id].commissionTeam || 0) + comm3;
                                     }
                                 }
                             }
                         }
                     }
-
-                    // 3. Mise à jour session locale et succès
-                    session.solde = userData.solde - prix;
-                    localStorage.setItem('hp_session', JSON.stringify(session));
-                    
-                    alert("✅ Activation réussie ! Votre machine est visible sur le Dashboard et vos retraits sont débloqués.");
-                    window.location.href = "dashboard.html";
-
-                } catch (e) {
-                    alert("❌ Erreur lors de l'activation.");
                 }
-            }
-        }
 
-        async function giveComm(userObj, montant, type) {
-            // Trouver la clé Firebase de l'utilisateur par son téléphone
-            const res = await fetch(`${dbURL}/utilisateurs.json`);
-            const data = await res.json();
-            const fId = Object.keys(data).find(key => data[key].telephone === userObj.telephone);
-
-            if(fId) {
-                await fetch(`${dbURL}/utilisateurs/${fId}.json`, {
+                // 4. Exécuter toutes les transactions d'un coup
+                await fetch(`${dbURL}/.json`, {
                     method: 'PATCH',
-                    body: JSON.stringify({
-                        solde: (data[fId].solde || 0) + montant,
-                        revenuTotal: (data[fId].revenuTotal || 0) + montant
-                    })
+                    body: JSON.stringify(updates)
                 });
+
+                alert("⚙️ Succès : Équipement HP VIP " + id + " activé ! Vos parrains ont reçu leurs commissions.");
+                location.reload();
+
+            } catch (error) {
+                console.error(error);
+                alert("Erreur lors de la transaction. Vérifiez votre connexion.");
             }
         }
     </script>
