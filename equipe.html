@@ -84,8 +84,8 @@
         const session = JSON.parse(localStorage.getItem('hp_session'));
         if(!session) window.location.href = "index.html";
 
-        // LIEN EXACT HP INVEST MIS À JOUR
-        const baseURL = "https://hp3o.github.io/Ph/inscription.html";
+        // CONFIGURATION DU LIEN EXACT HP INVEST
+        const baseURL = "https://hp3o.github.io/Ph/";
         const fullRefLink = `${baseURL}?ref=${session.telephone}`;
         document.getElementById('refLink').innerText = fullRefLink;
 
@@ -113,14 +113,11 @@
                 let countL1 = 0, countL2 = 0, countL3 = 0;
                 let displayedMembers = "";
 
-                // Liste des numéros pour chaîner les niveaux
                 let l1_phones = [];
                 let l2_phones = [];
 
                 for(let id in allUsers) {
                     const u = allUsers[id];
-                    
-                    // Niveau 1 : Parrain direct est moi
                     if(u.parrain === session.telephone) {
                         countL1++;
                         l1_phones.push(u.telephone);
@@ -128,7 +125,6 @@
                     }
                 }
 
-                // Niveau 2 : Parrain est quelqu'un du Niveau 1
                 for(let id in allUsers) {
                     const u = allUsers[id];
                     if(l1_phones.includes(u.parrain)) {
@@ -138,7 +134,6 @@
                     }
                 }
 
-                // Niveau 3 : Parrain est quelqu'un du Niveau 2
                 for(let id in allUsers) {
                     const u = allUsers[id];
                     if(l2_phones.includes(u.parrain)) {
@@ -147,7 +142,6 @@
                     }
                 }
 
-                // Mise à jour des compteurs
                 document.getElementById('l1_count').innerText = countL1;
                 document.getElementById('l2_count').innerText = countL2;
                 document.getElementById('l3_count').innerText = countL3;
