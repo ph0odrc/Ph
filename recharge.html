@@ -9,11 +9,28 @@
     <style>
         body { background: #f8fafc; font-family: 'Segoe UI', sans-serif; }
         .hp-blue { background: #007DBA; }
-        .amount-card { @apply bg-white border-2 border-slate-100 p-3 rounded-2xl text-center font-black text-slate-700 transition-all cursor-pointer; }
-        .amount-active { @apply border-[#007DBA] bg-blue-50 text-[#007DBA]; }
-        .network-card { @apply flex items-center gap-3 p-4 bg-white rounded-2xl border border-slate-100 mb-3 cursor-pointer transition-all; }
-        .network-active { @apply border-[#007DBA] ring-2 ring-blue-100; }
+        
+        /* Style quand un montant est sélectionné */
+        .amount-card { @apply bg-white border-2 border-slate-100 p-3 rounded-2xl text-center font-black text-slate-700 transition-all cursor-pointer flex flex-col items-center justify-center; }
+        .amount-active { 
+            border-color: #007DBA !important; 
+            background-color: #f0f9ff !important; 
+            color: #007DBA !important;
+            transform: scale(1.05);
+            box-shadow: 0 10px 15px -3px rgba(0, 125, 186, 0.2);
+        }
+
+        /* Style quand un réseau est sélectionné */
+        .network-card { @apply flex items-center gap-3 p-4 bg-white rounded-2xl border-2 border-slate-100 mb-3 cursor-pointer transition-all; }
+        .network-active { 
+            border-color: #007DBA !important; 
+            background-color: #f0f9ff !important;
+            ring-4 ring-blue-50;
+        }
+
         .session-hidden { display: none; }
+        .check-icon { display: none; }
+        .amount-active .check-icon, .network-active .check-icon { display: block; }
     </style>
 </head>
 <body class="pb-10">
@@ -27,15 +44,42 @@
         <div>
             <h3 class="text-[11px] font-black uppercase text-slate-400 mb-3 tracking-widest">1. Choisir le montant (CDF)</h3>
             <div class="grid grid-cols-3 gap-3">
-                <div class="amount-card" onclick="selectAmount(18000, this)">18.000</div>
-                <div class="amount-card" onclick="selectAmount(35000, this)">35.000</div>
-                <div class="amount-card" onclick="selectAmount(50000, this)">50.000</div>
-                <div class="amount-card" onclick="selectAmount(75000, this)">75.000</div>
-                <div class="amount-card" onclick="selectAmount(100000, this)">100.000</div>
-                <div class="amount-card" onclick="selectAmount(150000, this)">150.000</div>
-                <div class="amount-card" onclick="selectAmount(300000, this)">300.000</div>
-                <div class="amount-card" onclick="selectAmount(500000, this)">500.000</div>
-                <div class="amount-card" onclick="selectAmount(1000000, this)">1 000 000</div>
+                <div class="amount-card" onclick="selectAmount(18000, this)">
+                    <span>18.000</span>
+                    <i class="fa-solid fa-circle-check check-icon text-[10px] mt-1"></i>
+                </div>
+                <div class="amount-card" onclick="selectAmount(35000, this)">
+                    <span>35.000</span>
+                    <i class="fa-solid fa-circle-check check-icon text-[10px] mt-1"></i>
+                </div>
+                <div class="amount-card" onclick="selectAmount(50000, this)">
+                    <span>50.000</span>
+                    <i class="fa-solid fa-circle-check check-icon text-[10px] mt-1"></i>
+                </div>
+                <div class="amount-card" onclick="selectAmount(75000, this)">
+                    <span>75.000</span>
+                    <i class="fa-solid fa-circle-check check-icon text-[10px] mt-1"></i>
+                </div>
+                <div class="amount-card" onclick="selectAmount(100000, this)">
+                    <span>100.000</span>
+                    <i class="fa-solid fa-circle-check check-icon text-[10px] mt-1"></i>
+                </div>
+                <div class="amount-card" onclick="selectAmount(150000, this)">
+                    <span>150.000</span>
+                    <i class="fa-solid fa-circle-check check-icon text-[10px] mt-1"></i>
+                </div>
+                <div class="amount-card" onclick="selectAmount(300000, this)">
+                    <span>300.000</span>
+                    <i class="fa-solid fa-circle-check check-icon text-[10px] mt-1"></i>
+                </div>
+                <div class="amount-card" onclick="selectAmount(500000, this)">
+                    <span>500.000</span>
+                    <i class="fa-solid fa-circle-check check-icon text-[10px] mt-1"></i>
+                </div>
+                <div class="amount-card" onclick="selectAmount(1000000, this)">
+                    <span>1M</span>
+                    <i class="fa-solid fa-circle-check check-icon text-[10px] mt-1"></i>
+                </div>
             </div>
         </div>
 
@@ -43,15 +87,18 @@
             <h3 class="text-[11px] font-black uppercase text-slate-400 mb-3 tracking-widest">2. Choisir le réseau</h3>
             <div class="network-card" onclick="selectNetwork('M-Pesa', '+243813944647', 'VODA AGENT HP', this)">
                 <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/M-Pesa_logo.png/1200px-M-Pesa_logo.png" class="w-10 h-10 object-contain">
-                <span class="font-bold text-slate-700">Vodacom M-Pesa</span>
+                <span class="font-bold text-slate-700 flex-1">Vodacom M-Pesa</span>
+                <i class="fa-solid fa-circle-check check-icon text-[#007DBA]"></i>
             </div>
             <div class="network-card" onclick="selectNetwork('Airtel Money', '+243998566330', 'AIRTEL AGENT HP', this)">
                 <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/Airtel_logo.svg/1200px-Airtel_logo.svg.png" class="w-10 h-10 object-contain">
-                <span class="font-bold text-slate-700">Airtel Money</span>
+                <span class="font-bold text-slate-700 flex-1">Airtel Money</span>
+                <i class="fa-solid fa-circle-check check-icon text-[#007DBA]"></i>
             </div>
             <div class="network-card" onclick="selectNetwork('Orange Money', '+243802667704', 'ORANGE AGENT HP', this)">
                 <img src="https://upload.wikimedia.org/wikipedia/en/thumb/c/c8/Orange_logo.svg/1024px-Orange_logo.svg.png" class="w-10 h-10 object-contain">
-                <span class="font-bold text-slate-700">Orange Money</span>
+                <span class="font-bold text-slate-700 flex-1">Orange Money</span>
+                <i class="fa-solid fa-circle-check check-icon text-[#007DBA]"></i>
             </div>
         </div>
 
