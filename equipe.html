@@ -84,20 +84,18 @@
         const session = JSON.parse(localStorage.getItem('hp_session'));
         if(!session) window.location.href = "index.html";
 
-        // --- CORRECTION DU LIEN POUR CORRESPONDRE AU NOM SUR GITHUB ---
         const baseURL = "https://hp3o.github.io/Ph/register.html";
-        const fullRefLink = `${baseURL}?ref=${session.telephone}`;
+        const fullRefLink = `${baseURL}?ref=${encodeURIComponent(session.telephone)}`;
         document.getElementById('refLink').innerText = fullRefLink;
 
         function copyLink() {
-            // Utilisation d'un input temporaire pour garantir la copie sur mobile
             const tempInput = document.createElement("input");
             tempInput.value = fullRefLink;
             document.body.appendChild(tempInput);
             tempInput.select();
             document.execCommand("copy");
             document.body.removeChild(tempInput);
-            alert("✅ Lien HP copié ! Partagez-le pour gagner vos commissions.");
+            alert("✅ Lien HP copié !");
         }
 
         async function loadTeam(level) {
@@ -117,31 +115,39 @@
                 
                 let countL1 = 0, countL2 = 0, countL3 = 0;
                 let displayedMembers = "";
+                let l1_phones = [], l2_phones = [];
 
-                let l1_phones = [];
-                let l2_phones = [];
+                // Normalisation du numéro de session pour la comparaison
+                const myPhone = session.telephone.trim();
 
                 for(let id in allUsers) {
                     const u = allUsers[id];
-                    if(u.parrain === session.telephone) {
+                    if(!u.parrain) continue;
+
+                    const userParrain = u.parrain.trim();
+
+                    // NIVEAU 1
+                    if(userParrain === myPhone) {
                         countL1++;
                         l1_phones.push(u.telephone);
                         if(level === 1) displayedMembers += renderUserCard(u, 1);
                     }
                 }
 
+                // NIVEAU 2
                 for(let id in allUsers) {
                     const u = allUsers[id];
-                    if(l1_phones.includes(u.parrain)) {
+                    if(u.parrain && l1_phones.includes(u.parrain.trim())) {
                         countL2++;
                         l2_phones.push(u.telephone);
                         if(level === 2) displayedMembers += renderUserCard(u, 2);
                     }
                 }
 
+                // NIVEAU 3
                 for(let id in allUsers) {
                     const u = allUsers[id];
-                    if(l2_phones.includes(u.parrain)) {
+                    if(u.parrain && l2_phones.includes(u.parrain.trim())) {
                         countL3++;
                         if(level === 3) displayedMembers += renderUserCard(u, 3);
                     }
@@ -150,7 +156,9 @@
                 document.getElementById('l1_count').innerText = countL1;
                 document.getElementById('l2_count').innerText = countL2;
                 document.getElementById('l3_count').innerText = countL3;
-                document.getElementById('commTotal').innerText = (session.revenuTotal || 0).toLocaleString();
+                
+                // On récupère le solde commission mis à jour depuis la session
+                document.getElementById('commTotal').innerText = (session.commissionTeam || 0).toLocaleString();
 
                 list.innerHTML = displayedMembers || `
                     <div class="text-center py-10">
@@ -158,7 +166,7 @@
                         <p class="text-[10px] font-bold text-slate-400 uppercase">Aucun membre au Niveau ${level}</p>
                     </div>`;
 
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error("Erreur chargement équipe:", e); }
         }
 
         function renderUserCard(u, lvl) {
