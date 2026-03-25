@@ -1,0 +1,75 @@
+
+        // --- 1. AJUSTEMENT MANUEL ---
+        async function updateUserBalance() {
+            const phone = document.getElementById('targetPhone').value.trim();
+            const amount = parseFloat(document.getElementById('targetAmount').value);
+            const btn = document.getElementById('btnUpdate');
+
+            if(!phone || isNaN(amount)) return alert("Veuillez remplir correctement les champs !");
+            
+            btn.disabled = true;
+            btn.innerText = "Traitement...";
+
+            try {
+                const res = await fetch(`${dbURL}/utilisateurs.json`);
+                const users = await res.json();
+                
+                // On cherche l'utilisateur par son numéro de téléphone
+                let uId = null;
+                for(let key in users) {
+                    if(users[key].telephone && users[key].telephone.includes(phone)) {
+                        uId = key;
+                        break;
+                    }
+                }
+
+
+                }
+                if(!hasRet) retContainer.innerHTML = "<p class='text-center text-slate-700 text-[10px]'>Aucun paiement à effectuer.</p>";
+
+            } catch (e) { console.error("Erreur de chargement des flux"); }
+        }
+
+        // --- 3. VALIDATION / REJET ---
+        async function actionRequest(path, docId, newStatus, amount = 0, userUid = "") {
+            if(!confirm(`Voulez-vous marquer cette demande comme ${newStatus} ?`)) return;
+
+            try {
+                // Mise à jour du statut
+                await fetch(`${dbURL}/${path}/${docId}.json`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ statut: newStatus })
+                });
+
+                // Si c'est un dépôt OK ou un remboursement de retrait
+                if((path === 'demandesRecharge' && newStatus === 'Validé') || (path === 'demandesRetrait' && newStatus === 'Rejeté')) {
+                    // On récupère les données fraîches de l'utilisateur
+                    const resU = await fetch(`${dbURL}/utilisateurs/${userUid}.json`);
+                    const userData = await resU.json();
+                    
+                    if(userData) {
+                        const payload = {
+                            solde: (userData.solde || 0) + amount
+                        };
+                        
+                        // Si c'est une recharge, on met aussi à jour le total rechargé pour les stats
+                        if(path === 'demandesRecharge') {
+                            payload.rechargeTotale = (userData.rechargeTotale || 0) + amount;
+                        }
+
+                        await fetch(`${dbURL}/utilisateurs/${userUid}.json`, {
+                            method: 'PATCH',
+                            body: JSON.stringify(payload)
+                        });
+                    }
+                }
+
+                alert("✅ Action enregistrée !");
+                location.reload();
+            } catch (e) { alert("Erreur lors de l'opération."); }
+        }
+
+        loadRequests();
+    </script>
+</body>
+</html>
