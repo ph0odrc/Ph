@@ -68,15 +68,18 @@
     </div>
 
     <script>
-        const dbURL = "https://ph-invest-f5bdf-default-rtdb.firebaseio.com";
-
-        // --- 1. DETECTION AUTO DU PARRAIN ---
+        // --- 1. DETECTION AUTO ET VERROUILLAGE DU PARRAIN ---
         window.onload = function() {
             const urlParams = new URLSearchParams(window.location.search);
             const refCode = urlParams.get('ref');
+            const invInput = document.getElementById('inv');
+            
             if (refCode) {
-                // On nettoie le code (enlève le + si présent)
-                document.getElementById('inv').value = refCode.replace('+', '').trim();
+                invInput.value = refCode;
+                // Empêche l'utilisateur de modifier le code de parrainage reçu
+                invInput.readOnly = true; 
+                invInput.style.opacity = "0.7";
+                console.log("Parrain HP lié : " + refCode);
             }
         };
 
@@ -84,59 +87,51 @@
         document.getElementById('hpRegForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const rawPhone = document.getElementById('tel').value.trim();
-            const phone = "+243" + rawPhone;
+            const phone = document.getElementById('tel').value;
             const pass1 = document.getElementById('p1').value;
             const pass2 = document.getElementById('p2').value;
-            const parrain = document.getElementById('inv').value.trim();
+            const parrain = document.getElementById('inv').value;
             const btn = document.getElementById('submitBtn');
 
-            if(pass1 !== pass2) return alert("❌ Les mots de passe ne sont pas identiques !");
-            if(pass1.length < 4) return alert("❌ Mot de passe trop court (min 4).");
+            if(pass1 !== pass2) {
+                alert("❌ Erreur : Les mots de passe ne sont pas identiques !");
+                return;
+            }
 
-            btn.innerText = "VÉRIFICATION HP...";
+            if(pass1.length < 4) {
+                alert("❌ Mot de passe trop court.");
+                return;
+            }
+
+            btn.innerText = "SYNCHRONISATION HP...";
             btn.disabled = true;
 
+            const userData = {
+                telephone: "+243" + phone,
+                motDePasse: pass1,
+                parrain: parrain, // Nom de clé harmonisé pour ton système d'équipe
+                solde: 0,
+                commissionTeam: 0,
+                dateInscription: new Date().toISOString(),
+                machineActive: "Aucune"
+            };
+
             try {
-                // Vérifier si le numéro existe déjà
-                const checkRes = await fetch(`${dbURL}/utilisateurs.json`);
-                const allUsers = await checkRes.json() || {};
-                
-                const exists = Object.values(allUsers).some(u => u.telephone === phone);
-                if(exists) {
-                    alert("❌ Ce numéro est déjà enregistré !");
-                    btn.innerText = "CRÉER MON COMPTE HP";
-                    btn.disabled = false;
-                    return;
-                }
-
-                const userData = {
-                    telephone: phone,
-                    motDePasse: pass1,
-                    parrain: parrain, // Pour tes commissions 28%
-                    solde: 0,
-                    revenuTotal: 0,
-                    droitRetrait: false,
-                    produitActif: false,
-                    dateInscription: new Date().toISOString()
-                };
-
-                // Enregistrement avec un ID unique propre (on utilise le numéro sans le + comme clé)
-                const userId = phone.replace('+', '');
-                const response = await fetch(`${dbURL}/utilisateurs/${userId}.json`, {
-                    method: 'PUT', // PUT crée un ID fixe, POST crée un ID bizarre (rouge)
+                // Utilisation de la méthode PUT avec le numéro comme clé pour éviter les doublons
+                const userKey = encodeURIComponent(userData.telephone);
+                const response = await fetch(`https://ph-invest-f5bdf-default-rtdb.firebaseio.com/utilisateurs/${userKey}.json`, {
+                    method: 'PUT',
                     body: JSON.stringify(userData)
                 });
 
                 if(response.ok) {
-                    alert("✅ Bienvenue chez HP INVEST ! Connectez-vous.");
+                    alert("✅ Compte HP INVEST créé avec succès !");
                     window.location.href = "index.html";
                 } else {
                     throw new Error();
                 }
-
             } catch (error) {
-                alert("❌ Erreur serveur. Vérifiez votre connexion.");
+                alert("❌ Erreur lors de la création.");
                 btn.innerText = "CRÉER MON COMPTE HP";
                 btn.disabled = false;
             }
