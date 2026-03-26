@@ -83,7 +83,8 @@
         const session = JSON.parse(localStorage.getItem('hp_session'));
         if(!session) window.location.href = "index.html";
 
-        const baseURL = "https://hp3o.github.io/Ph/register.html";
+        // MISE À JOUR DU LIEN DEMANDÉ
+        const baseURL = "https://drc-invest05o.github.io/Ph/register.html";
         const fullRefLink = `${baseURL}?ref=${encodeURIComponent(session.telephone)}`;
         document.getElementById('refLink').innerText = fullRefLink;
 
@@ -98,7 +99,6 @@
         }
 
         async function loadTeam(level) {
-            // Mise à jour visuelle des onglets
             document.querySelectorAll('button[id^="btnL"]').forEach(b => {
                 b.classList.remove('tab-active');
                 b.classList.add('text-slate-400');
@@ -117,7 +117,6 @@
                 const usersArray = Object.values(allUsers);
                 const myPhone = session.telephone.trim();
 
-                // Filtration des niveaux
                 const lvl1 = usersArray.filter(u => u.parrain && u.parrain.trim() === myPhone);
                 const lvl1Phones = lvl1.map(u => u.telephone.trim());
 
@@ -126,13 +125,14 @@
 
                 const lvl3 = usersArray.filter(u => u.parrain && lvl2Phones.includes(u.parrain.trim()));
 
-                // Mise à jour des compteurs
                 document.getElementById('l1_count').innerText = lvl1.length;
                 document.getElementById('l2_count').innerText = lvl2.length;
                 document.getElementById('l3_count').innerText = lvl3.length;
-                document.getElementById('commTotal').innerText = (session.commissionTeam || 0).toLocaleString();
+                
+                // Récupération dynamique de la commission totale depuis la DB
+                const freshUser = allUsers[session.firebaseId];
+                document.getElementById('commTotal').innerText = (freshUser.commissionTeam || 0).toLocaleString();
 
-                // Affichage selon l'onglet
                 let currentView = [];
                 if(level === 1) currentView = lvl1;
                 if(level === 2) currentView = lvl2;
