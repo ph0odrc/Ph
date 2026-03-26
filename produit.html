@@ -23,7 +23,8 @@
         <p class="text-[10px] font-bold opacity-80 uppercase tracking-[0.3em] mt-1 text-center">Choisissez votre puissance VIP</p>
     </div>
 
-    <div id="productContainer" class="px-5 mt-6 space-y-6"></div>
+    <div id="productContainer" class="px-5 mt-6 space-y-6">
+        </div>
 
     <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 p-4 flex justify-around items-center z-50">
         <a href="dashboard.html" class="flex flex-col items-center text-slate-300">
@@ -89,98 +90,100 @@
                             Activer
                         </button>
                     </div>
-                </div>`;
+                </div>
+            `;
         });
 
         async function commander(prix, id, revenuJour) {
             let session = JSON.parse(localStorage.getItem('hp_session'));
             if(!session) return window.location.href="index.html";
 
-            try {
-                // Récupérer tous les utilisateurs pour gérer la lignée de parrainage
-                const allUsersRes = await fetch(`${dbURL}/utilisateurs.json`);
-                const allUsers = await allUsersRes.json();
-                
-                const userData = allUsers[session.firebaseId];
+            // Récupérer les infos fraîches de l'utilisateur
+            const userRes = await fetch(`${dbURL}/utilisateurs/${session.firebaseId}.json`);
+            const userData = await userRes.json();
 
-                if(!userData || userData.solde < prix) {
-                    alert("❌ Solde insuffisant ! Veuillez recharger.");
-                    return;
-                }
+            if(userData.solde < prix) {
+                alert("❌ Solde insuffisant ! Veuillez recharger pour acheter ce produit.");
+                return;
+            }
 
-                if(!confirm(`Confirmer l'activation du HP VIP ${id} ?`)) return;
-
-                const now = new Date().toISOString();
-                const updates = {};
-
-                // 1. Mise à jour de l'acheteur
-                updates[`/utilisateurs/${session.firebaseId}/solde`] = userData.solde - prix;
-                updates[`/utilisateurs/${session.firebaseId}/produitActif`] = true;
-                updates[`/utilisateurs/${session.firebaseId}/nomProduit`] = "HP VIP " + id;
-                updates[`/utilisateurs/${session.firebaseId}/revenuJournalier`] = revenuJour;
-                updates[`/utilisateurs/${session.firebaseId}/dateAchatProduit`] = now;
-                updates[`/utilisateurs/${session.firebaseId}/derniereMajGains`] = now;
-                updates[`/utilisateurs/${session.firebaseId}/droitRetrait`] = true;
-                updates[`/utilisateurs/${session.firebaseId}/vipLevel`] = id;
-
-                // 2. LOGIQUE DES COMMISSIONS (3 NIVEAUX)
-                // Niveau 1 (28%)
-                if (userData.parrain) {
-                    const cleanP1 = userData.parrain.trim();
-                    const p1Id = Object.keys(allUsers).find(k => allUsers[k].telephone === cleanP1);
+            if(confirm(`Confirmer l'activation du HP VIP ${id} ?`)) {
+                try {
+                    const now = new Date().toISOString();
                     
-                    if (p1Id) {
-                        const comm1 = Math.floor(prix * 0.28);
-                        updates[`/utilisateurs/${p1Id}/solde`] = (allUsers[p1Id].solde || 0) + comm1;
-                        updates[`/utilisateurs/${p1Id}/commissionTeam`] = (allUsers[p1Id].commissionTeam || 0) + comm1;
-                        updates[`/utilisateurs/${p1Id}/revenuTotal`] = (allUsers[p1Id].revenuTotal || 0) + comm1;
+                    // 1. Mise à jour de l'utilisateur (Achat + Activation Retrait + Machine Dashboard)
+                    await fetch(`${dbURL}/utilisateurs/${session.firebaseId}.json`, {
+                        method: 'PATCH',
+                        body: JSON.stringify({
+                            solde: userData.solde - prix,
+                            produitActif: true,
+                            nomProduit: "HP VIP " + id,
+                            revenuJournalier: revenuJour,
+                            dateAchatProduit: now,
+                            derniereMajGains: now,
+                            droitRetrait: true,
+                            vipLevel: id
+                        })
+                    });
 
-                        // Niveau 2 (2%)
-                        const p1Data = allUsers[p1Id];
-                        if (p1Data.parrain) {
-                            const cleanP2 = p1Data.parrain.trim();
-                            const p2Id = Object.keys(allUsers).find(k => allUsers[k].telephone === cleanP2);
-                            if (p2Id) {
-                                const comm2 = Math.floor(prix * 0.02);
-                                updates[`/utilisateurs/${p2Id}/solde`] = (allUsers[p2Id].solde || 0) + comm2;
-                                updates[`/utilisateurs/${p2Id}/commissionTeam`] = (allUsers[p2Id].commissionTeam || 0) + comm2;
-                                updates[`/utilisateurs/${p2Id}/revenuTotal`] = (allUsers[p2Id].revenuTotal || 0) + comm2;
+                    // 2. DISTRIBUTION DES COMMISSIONS (3 NIVEAUX)
+                    const usersRes = await fetch(`${dbURL}/utilisateurs.json`);
+                    const allUsers = await usersRes.json();
 
-                                // Niveau 3 (1%)
-                                const p2Data = allUsers[p2Id];
-                                if (p2Data.parrain) {
-                                    const cleanP3 = p2Data.parrain.trim();
-                                    const p3Id = Object.keys(allUsers).find(k => allUsers[k].telephone === cleanP3);
-                                    if (p3Id) {
-                                        const comm3 = Math.floor(prix * 0.01);
-                                        updates[`/utilisateurs/${p3Id}/solde`] = (allUsers[p3Id].solde || 0) + comm3;
-                                        updates[`/utilisateurs/${p3Id}/commissionTeam`] = (allUsers[p3Id].commissionTeam || 0) + comm3;
-                                        updates[`/utilisateurs/${p3Id}/revenuTotal`] = (allUsers[p3Id].revenuTotal || 0) + comm3;
+                    // Niveau 1 (28%)
+                    if (userData.parrain) {
+                        const p1 = Object.values(allUsers).find(u => u.telephone === userData.parrain);
+                        if (p1) {
+                            const comm1 = prix * 0.28;
+                            await giveComm(p1, comm1, "Commission L1");
+                            
+                            // Niveau 2 (2%)
+                            if (p1.parrain) {
+                                const p2 = Object.values(allUsers).find(u => u.telephone === p1.parrain);
+                                if (p2) {
+                                    const comm2 = prix * 0.02;
+                                    await giveComm(p2, comm2, "Commission L2");
+
+                                    // Niveau 3 (1%)
+                                    if (p2.parrain) {
+                                        const p3 = Object.values(allUsers).find(u => u.telephone === p2.parrain);
+                                        if (p3) {
+                                            const comm3 = prix * 0.01;
+                                            await giveComm(p3, comm3, "Commission L3");
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
 
-                // Envoi de toutes les mises à jour en un seul coup (Ultra rapide et fiable)
-                const finalRes = await fetch(`${dbURL}/.json`, {
-                    method: 'PATCH',
-                    body: JSON.stringify(updates)
-                });
-
-                if(finalRes.ok) {
+                    // 3. Mise à jour session locale et succès
                     session.solde = userData.solde - prix;
                     localStorage.setItem('hp_session', JSON.stringify(session));
-                    alert("✅ Activation réussie ! Commissions versées aux parrains.");
+                    
+                    alert("✅ Activation réussie ! Votre machine est visible sur le Dashboard et vos retraits sont débloqués.");
                     window.location.href = "dashboard.html";
-                } else {
-                    throw new Error("Erreur serveur");
-                }
 
-            } catch (e) {
-                console.error(e);
-                alert("❌ Erreur lors de l'activation.");
+                } catch (e) {
+                    alert("❌ Erreur lors de l'activation.");
+                }
+            }
+        }
+
+        async function giveComm(userObj, montant, type) {
+            // Trouver la clé Firebase de l'utilisateur par son téléphone
+            const res = await fetch(`${dbURL}/utilisateurs.json`);
+            const data = await res.json();
+            const fId = Object.keys(data).find(key => data[key].telephone === userObj.telephone);
+
+            if(fId) {
+                await fetch(`${dbURL}/utilisateurs/${fId}.json`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({
+                        solde: (data[fId].solde || 0) + montant,
+                        revenuTotal: (data[fId].revenuTotal || 0) + montant
+                    })
+                });
             }
         }
     </script>
